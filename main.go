@@ -6,11 +6,12 @@ type Screen struct {
 	Side *ItemArea
 	Main *DiffArea
 
-	ShowSide bool
+	showSide bool
 }
 
 // Draw
 // Resize
+// ShowSide
 
 type Area interface {
 	Handle(termbox.Event) (next Area)
@@ -79,12 +80,37 @@ var screen *Screen
 func main() {
 	commits, err := AllCommits(repoDir)
 	screen, err := NewScreen(size, commits)
-	for ev {
-		// handle global events
-		curArea = curArea.Handle(ev)
-		if curArea == nil {
-			return
+	events := make(chan term.Event, 20)
+
+	go func() {
+		for {
+			events <- term.PollEvent()
 		}
+	}()
+
+	for {
 		screen.Draw()
+
+		ev := <-events
+		switch ev.Type {
+		case term.EventKey:
+			// global event
+			switch ev.Key {
+			case term.KeyCtrlW:
+				return
+			case term.KeyEnter:
+				screen.ShowSide(false)
+				curArea = screen.Main
+			case term.KeyEsc:
+				screen.ShowSide(true)
+				curArea = screen.Side
+			case term.KeyRight:
+				curArea = screen.Main
+			case term.KeyLeft:
+				curArea = screen.Side
+			}
+			// area event
+			curArea.Handle(ev)
+		}
 	}
 }
