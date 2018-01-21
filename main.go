@@ -30,7 +30,7 @@ type ItemArea struct {
 
 type DiffArea struct {
 	box  Rect
-	Text *Text
+	Text []byte
 	Win  *Window
 }
 
@@ -45,7 +45,7 @@ type Window struct {
 
 type Cursor struct {
 	Pos  Pt
-	Text *Text
+	Text []byte
 }
 
 // PageForward
