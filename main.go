@@ -3,8 +3,8 @@ package main
 import termbox "github.com/nsf/termbox-go"
 
 type Screen struct {
-	Side Area
-	Main Area
+	Side *ItemArea
+	Main *DiffArea
 
 	ShowSide bool
 }
