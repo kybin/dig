@@ -6,13 +6,11 @@ type Screen struct {
 	Side Area
 	Main Area
 
-	showSide bool
+	ShowSide bool
 }
 
 // Draw
 // Resize
-// ShowSide
-// HideSide
 
 type Area interface {
 	Handle(termbox.Event) (next Area)
@@ -21,7 +19,7 @@ type Area interface {
 }
 
 type ItemArea struct {
-	box     Rext
+	box     Rect
 	Commits []*Commit
 	CurIdx  int
 }
@@ -60,8 +58,8 @@ type Cursor struct {
 // MoveRight
 
 type Rect struct {
-	min  Pt
-	size Pt
+	Min  Pt
+	Size Pt
 }
 
 type Pt struct {
