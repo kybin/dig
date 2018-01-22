@@ -200,6 +200,15 @@ func (a *DiffArea) Draw() {
 		a.Text, _ = commitDiff(hash) // ignore error for now
 	}
 	for l, ln := range a.Text {
+		c := Color{termbox.ColorWhite, termbox.ColorBlack}
+		if len(ln) != 0 {
+			first := string(ln[0])
+			if first == "+" {
+				c = Color{termbox.ColorGreen, termbox.ColorBlack}
+			} else if first == "-" {
+				c = Color{termbox.ColorRed, termbox.ColorBlack}
+			}
+		}
 		o := 0
 		remain := ln
 		for {
@@ -208,7 +217,7 @@ func (a *DiffArea) Draw() {
 			}
 			r, size := utf8.DecodeRune(remain)
 			remain = remain[size:]
-			termbox.SetCell(a.Bound.Min.O+o, a.Bound.Min.L+l, r, termbox.ColorWhite, termbox.ColorBlack)
+			termbox.SetCell(a.Bound.Min.O+o, a.Bound.Min.L+l, r, c.Fg, c.Bg)
 			o += runewidth.RuneWidth(r)
 			if o >= a.Bound.Size.O {
 				break
