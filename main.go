@@ -38,7 +38,7 @@ func NewScreen(size Pt, commits []*Commit) *Screen {
 	return s
 }
 
-// Draw draw the screen content.
+// Draw draws the screen.
 func (s *Screen) Draw() {
 	s.Side.Draw()
 	s.Main.Draw()
@@ -65,7 +65,7 @@ func calcAreaBounds(size Pt, hideSide bool) (side Rect, main Rect) {
 	return side, main
 }
 
-// Resize resize the screen and re-fit sub areas.
+// Resize resizes the screen and re-fit sub areas.
 func (s *Screen) Resize(size Pt) {
 	side, main := calcAreaBounds(size, s.hideSide)
 	s.Side.Bound = side
@@ -108,15 +108,17 @@ func (a *ItemArea) Handle(ev termbox.Event) {
 	switch ev.Key {
 	case termbox.KeyArrowUp:
 		a.CurIdx--
-		if a.CurIdx < 0 {
-			a.CurIdx = 0
-		}
 	case termbox.KeyArrowDown:
 		a.CurIdx++
-		if a.CurIdx >= len(a.Commits) {
-			a.CurIdx = len(a.Commits) - 1
-		}
 	}
+	// validation
+	if a.CurIdx < 0 {
+		a.CurIdx = 0
+	}
+	if a.CurIdx >= len(a.Commits) {
+		a.CurIdx = len(a.Commits) - 1
+	}
+
 	if a.TopIdx > a.CurIdx {
 		a.TopIdx = a.CurIdx
 	} else if a.TopIdx+a.Bound.Size.L <= a.CurIdx {
@@ -229,7 +231,7 @@ type Commit struct {
 	Title string
 }
 
-// allCommits find repository and get it's commits.
+// allCommits find a repository and get it's commits.
 func allCommits(repodir string) ([]*Commit, error) {
 	cmd := exec.Command("git", "log", "--pretty=format:%H%n%s%n")
 	out, err := cmd.CombinedOutput()
