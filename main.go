@@ -110,6 +110,14 @@ func (a *ItemArea) Handle(ev termbox.Event) {
 		a.CurIdx--
 	case termbox.KeyArrowDown:
 		a.CurIdx++
+	case termbox.KeyPgup:
+		a.CurIdx -= a.Bound.Size.L
+	case termbox.KeyPgdn:
+		a.CurIdx += a.Bound.Size.L
+	case termbox.KeyHome:
+		a.CurIdx = 0
+	case termbox.KeyEnd:
+		a.CurIdx = len(a.Commits) - 1
 	}
 	// validation
 	if a.CurIdx < 0 {
