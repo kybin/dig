@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -174,10 +175,17 @@ func (a *ItemArea) Draw() {
 	}
 }
 
+// Commit is currently selected commit.
+func (a *ItemArea) Commit() *Commit {
+	return a.Commits[a.CurIdx]
+}
+
 // DiffArea is an Area for showing diff outputs.
 type DiffArea struct {
+	CommitHash string
+	Text       [][]byte
+
 	Bound Rect
-	Text  []byte
 	Win   *Window
 }
 
@@ -186,7 +194,27 @@ func (a *DiffArea) Handle(termbox.Event) {}
 
 // Draw draws it's contents.
 func (a *DiffArea) Draw() {
-	fillColor(a.Bound, Color{termbox.ColorBlue, termbox.ColorBlue})
+	hash := screen.Side.Commit().Hash
+	if hash != a.CommitHash {
+		a.CommitHash = hash
+		a.Text, _ = commitDiff(hash) // ignore error for now
+	}
+	for l, ln := range a.Text {
+		o := 0
+		remain := ln
+		for {
+			if len(remain) == 0 {
+				break
+			}
+			r, size := utf8.DecodeRune(remain)
+			remain = remain[size:]
+			termbox.SetCell(a.Bound.Min.O+o, a.Bound.Min.L+l, r, termbox.ColorWhite, termbox.ColorBlack)
+			o += runewidth.RuneWidth(r)
+			if o >= a.Bound.Size.O {
+				break
+			}
+		}
+	}
 }
 
 // Window is a cursor which has size.
@@ -254,6 +282,17 @@ func allCommits(repodir string) ([]*Commit, error) {
 	return commits, nil
 }
 
+// commitDiff returns changes of a commit.
+func commitDiff(hash string) ([][]byte, error) {
+	cmd := exec.Command("git", "show", hash)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, err
+	}
+	lines := bytes.Split(out, []byte("\n"))
+	return lines, err
+}
+
 func main() {
 	commits, err := allCommits(".")
 	if err != nil {
@@ -269,7 +308,7 @@ func main() {
 
 	w, h := termbox.Size()
 	size := Pt{h, w}
-	screen := NewScreen(size, commits)
+	screen = NewScreen(size, commits)
 
 	events := make(chan termbox.Event, 20)
 	go func() {
