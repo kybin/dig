@@ -3,7 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
+	"strings"
+	"unicode/utf8"
 
+	runewidth "github.com/mattn/go-runewidth"
 	termbox "github.com/nsf/termbox-go"
 )
 
@@ -42,8 +46,8 @@ func (s *Screen) Draw() {
 
 // calcAreaBounds calculates it's sub area's boxes.
 func calcAreaBounds(size Pt, hideSide bool) (side Rect, main Rect) {
-	sideWidth := 20
-	if size.L < 20 {
+	sideWidth := 40
+	if size.O < 40 {
 		sideWidth = size.O
 	}
 	if hideSide {
@@ -96,14 +100,68 @@ type ItemArea struct {
 	Bound   Rect
 	Commits []*Commit
 	CurIdx  int
+	TopIdx  int
 }
 
 // Handle handles a terminal event.
-func (a *ItemArea) Handle(ev termbox.Event) {}
+func (a *ItemArea) Handle(ev termbox.Event) {
+	switch ev.Key {
+	case termbox.KeyArrowUp:
+		a.CurIdx--
+		if a.CurIdx < 0 {
+			a.CurIdx = 0
+		}
+	case termbox.KeyArrowDown:
+		a.CurIdx++
+		if a.CurIdx >= len(a.Commits) {
+			a.CurIdx = len(a.Commits) - 1
+		}
+	}
+	if a.TopIdx > a.CurIdx {
+		a.TopIdx = a.CurIdx
+	} else if a.TopIdx+a.Bound.Size.L <= a.CurIdx {
+		a.TopIdx = a.CurIdx - a.Bound.Size.L + 1
+	}
+}
 
 // Draw draws it's contents.
 func (a *ItemArea) Draw() {
-	fillColor(a.Bound, Color{termbox.ColorRed, termbox.ColorRed})
+	top := a.TopIdx
+	bottom := top + a.Bound.Size.L
+	for i := top; i < bottom; i++ {
+		if i == len(a.Commits) {
+			break
+		}
+		commit := a.Commits[i]
+
+		c := Color{Fg: termbox.ColorWhite, Bg: termbox.ColorBlack}
+		if i == a.CurIdx {
+			c = Color{Fg: termbox.ColorWhite, Bg: termbox.ColorGreen}
+		}
+
+		remain := commit.Title
+		l := i - top
+		o := 0
+		for {
+			r, size := utf8.DecodeRuneInString(remain)
+			remain = remain[size:]
+			termbox.SetCell(o, l, r, c.Fg, c.Bg)
+			o += runewidth.RuneWidth(r)
+			if o >= a.Bound.Size.O {
+				break
+			}
+			if len(remain) == 0 {
+				if i == a.CurIdx {
+					// fill the rest of current line
+					for o < a.Bound.Size.O {
+						termbox.SetCell(a.Bound.Min.O+o, a.Bound.Min.L+l, ' ', c.Fg, c.Bg)
+						o++
+					}
+				}
+				break
+			}
+		}
+	}
 }
 
 // DiffArea is an Area for showing diff outputs.
@@ -167,17 +225,27 @@ type Color struct {
 
 // Commit is a git commit.
 type Commit struct {
-	Hash string
-	Diff []byte
+	Hash  string
+	Title string
 }
 
 // allCommits find repository and get it's commits.
 func allCommits(repodir string) ([]*Commit, error) {
-	return []*Commit{}, nil
+	cmd := exec.Command("git", "log", "--pretty=format:%H%n%s%n")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, err
+	}
+	commits := []*Commit{}
+	for _, c := range strings.Split(string(out), "\n\n") {
+		l := strings.Split(c, "\n")
+		commits = append(commits, &Commit{Hash: l[0], Title: l[1]})
+	}
+	return commits, nil
 }
 
 func main() {
-	commits, err := allCommits("implement this")
+	commits, err := allCommits(".")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "could not get commits: %v", err)
 	}
@@ -202,6 +270,7 @@ func main() {
 
 	curArea := Area(screen.Side)
 	for {
+		termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 		screen.Draw()
 		termbox.Flush()
 
@@ -225,6 +294,10 @@ func main() {
 			}
 			// handle sub area event
 			curArea.Handle(ev)
+		case termbox.EventResize:
+			w, h := termbox.Size()
+			size := Pt{h, w}
+			screen.Resize(size)
 		}
 	}
 }
