@@ -35,6 +35,9 @@ func NewScreen(size Pt, commits []*Commit) *Screen {
 	}
 	s.Main = &DiffArea{
 		Bound: main,
+		Win: &Window{
+			Bound: main,
+		},
 	}
 	return s
 }
@@ -157,13 +160,6 @@ func (a *ItemArea) Draw() {
 		l := i - top
 		o := 0
 		for {
-			r, size := utf8.DecodeRuneInString(remain)
-			remain = remain[size:]
-			termbox.SetCell(o, l, r, c.Fg, c.Bg)
-			o += runewidth.RuneWidth(r)
-			if o >= a.Bound.Size.O {
-				break
-			}
 			if len(remain) == 0 {
 				if i == a.CurIdx {
 					// fill the rest of current line
@@ -174,6 +170,13 @@ func (a *ItemArea) Draw() {
 				}
 				break
 			}
+			if o >= a.Bound.Size.O {
+				break
+			}
+			r, size := utf8.DecodeRuneInString(remain)
+			remain = remain[size:]
+			termbox.SetCell(o, l, r, c.Fg, c.Bg)
+			o += runewidth.RuneWidth(r)
 		}
 	}
 }
@@ -193,7 +196,14 @@ type DiffArea struct {
 }
 
 // Handle handles a terminal event.
-func (a *DiffArea) Handle(termbox.Event) {}
+func (a *DiffArea) Handle(ev termbox.Event) {
+	if ev.Ch == 'f' || ev.Key == termbox.KeyPgdn {
+		a.Win.PageForward()
+	}
+	if ev.Ch == 'b' || ev.Key == termbox.KeyPgup {
+		a.Win.PageBackward()
+	}
+}
 
 // Draw draws it's contents.
 func (a *DiffArea) Draw() {
@@ -201,8 +211,14 @@ func (a *DiffArea) Draw() {
 	if hash != a.CommitHash {
 		a.CommitHash = hash
 		a.Text, _ = commitDiff(hash) // ignore error for now
+		a.Win.Reset(a.Text)
 	}
-	for l, ln := range a.Text {
+	minL := a.Win.Bound.Min.L
+	maxL := a.Win.Bound.Min.L + a.Win.Bound.Size.L
+	if maxL > len(a.Text) {
+		maxL = len(a.Text)
+	}
+	for l, ln := range a.Text[minL:maxL] {
 		c := Color{termbox.ColorWhite, termbox.ColorBlack}
 		if len(ln) != 0 {
 			first := string(ln[0])
@@ -218,31 +234,44 @@ func (a *DiffArea) Draw() {
 			if len(remain) == 0 {
 				break
 			}
-			r, size := utf8.DecodeRune(remain)
-			remain = remain[size:]
-			termbox.SetCell(a.Bound.Min.O+o, a.Bound.Min.L+l, r, c.Fg, c.Bg)
-			o += runewidth.RuneWidth(r)
 			if o >= a.Bound.Size.O {
 				break
 			}
+			r, size := utf8.DecodeRune(remain)
+			remain = remain[size:]
+			termbox.SetCell(a.Bound.Min.O-a.Win.Bound.Min.O+o, a.Bound.Min.L+l, r, c.Fg, c.Bg)
+			o += runewidth.RuneWidth(r)
 		}
 	}
 }
 
 // Window is a cursor which has size.
 type Window struct {
-	Cursor
-	Size Pt
+	Bound Rect
+	Text  [][]byte
 }
 
-// Cursor is a cursor to navigate it's text.
-type Cursor struct {
-	Pos  Pt
-	Text []byte
+func (w *Window) Reset(t [][]byte) {
+	w.Text = t
+	w.Bound.Min = Pt{0, 0}
 }
 
-// PageForward
-// PageBackward
+// PageForward moves a window a page forward.
+func (w *Window) PageForward() {
+	w.Bound.Min.L += w.Bound.Size.L
+	if w.Bound.Min.L >= len(w.Text) {
+		w.Bound.Min.L = len(w.Text) - 1
+	}
+}
+
+// PageBackward moves a window a page backward.
+func (w *Window) PageBackward() {
+	w.Bound.Min.L -= w.Bound.Size.L
+	if w.Bound.Min.L < 0 {
+		w.Bound.Min.L = 0
+	}
+}
+
 // HalfPageForward
 // HalfPageBackward
 // MoveUp
