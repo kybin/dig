@@ -203,6 +203,12 @@ func (a *DiffArea) Handle(ev termbox.Event) {
 	if ev.Ch == 'b' || ev.Key == termbox.KeyPgup {
 		a.Win.PageBackward()
 	}
+	if ev.Ch == 'd' {
+		a.Win.HalfPageForward()
+	}
+	if ev.Ch == 'u' {
+		a.Win.HalfPageBackward()
+	}
 }
 
 // Draw draws it's contents.
@@ -272,8 +278,22 @@ func (w *Window) PageBackward() {
 	}
 }
 
-// HalfPageForward
-// HalfPageBackward
+// HalfPageForward moves a window a page forward.
+func (w *Window) HalfPageForward() {
+	w.Bound.Min.L += w.Bound.Size.L / 2
+	if w.Bound.Min.L >= len(w.Text) {
+		w.Bound.Min.L = len(w.Text) - 1
+	}
+}
+
+// HalfPageBackward moves a window a page backward.
+func (w *Window) HalfPageBackward() {
+	w.Bound.Min.L -= w.Bound.Size.L / 2
+	if w.Bound.Min.L < 0 {
+		w.Bound.Min.L = 0
+	}
+}
+
 // MoveUp
 // MoveDown
 // MoveLeft
