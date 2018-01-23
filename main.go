@@ -294,7 +294,8 @@ func (w *Window) HalfPageBackward() {
 	w.MoveUp(w.Bound.Size.L / 2)
 }
 
-// MoveUp
+// MoveUp moves up at maximum n.
+// When it hits the boundary it stops.
 func (w *Window) MoveUp(n int) {
 	w.Bound.Min.L -= n
 	if w.Bound.Min.L < 0 {
@@ -302,7 +303,8 @@ func (w *Window) MoveUp(n int) {
 	}
 }
 
-// MoveDown
+// MoveDown moves down at maximum n.
+// When it hits the boundary it stops.
 func (w *Window) MoveDown(n int) {
 	w.Bound.Min.L += n
 	if w.Bound.Min.L >= len(w.Text) {
@@ -310,7 +312,8 @@ func (w *Window) MoveDown(n int) {
 	}
 }
 
-// MoveLeft
+// MoveLeft moves left at maximum n.
+// When it hits the boundary it stops.
 func (w *Window) MoveLeft(n int) {
 	w.Bound.Min.O -= n
 	if w.Bound.Min.O < 0 {
@@ -318,7 +321,8 @@ func (w *Window) MoveLeft(n int) {
 	}
 }
 
-// MoveRight
+// MoveRight move right at maximum n.
+// TODO: When it hits the boundary it stops.
 func (w *Window) MoveRight(n int) {
 	w.Bound.Min.O += n
 }
