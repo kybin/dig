@@ -363,6 +363,8 @@ func allCommits(repodir string) ([]*Commit, error) {
 	if err != nil {
 		return nil, err
 	}
+	// tab handling in screen is quite awkard. handle it here.
+	out = bytes.Replace(out, []byte("\t"), []byte("    "), -1)
 	commits := []*Commit{}
 	for _, c := range strings.Split(string(out), "\n\n") {
 		l := strings.Split(c, "\n")
@@ -378,6 +380,8 @@ func commitDiff(hash string) ([][]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	// tab handling in screen is quite awkard. handle it here.
+	out = bytes.Replace(out, []byte("\t"), []byte("    "), -1)
 	lines := bytes.Split(out, []byte("\n"))
 	return lines, err
 }
