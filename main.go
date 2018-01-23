@@ -78,6 +78,7 @@ func calcAreaBounds(size Pt, hideSide bool) (side Rect, main Rect) {
 
 // Resize resizes the screen and re-fit sub areas.
 func (s *Screen) Resize(size Pt) {
+	s.size = size
 	side, main := calcAreaBounds(size, s.hideSide)
 	s.Side.Bound = side
 	s.Main.Bound = main
