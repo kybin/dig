@@ -276,34 +276,22 @@ func (w *Window) Reset(t [][]byte) {
 
 // PageForward moves a window a page forward.
 func (w *Window) PageForward() {
-	w.Bound.Min.L += w.Bound.Size.L
-	if w.Bound.Min.L >= len(w.Text) {
-		w.Bound.Min.L = len(w.Text) - 1
-	}
+	w.MoveDown(w.Bound.Size.L)
 }
 
 // PageBackward moves a window a page backward.
 func (w *Window) PageBackward() {
-	w.Bound.Min.L -= w.Bound.Size.L
-	if w.Bound.Min.L < 0 {
-		w.Bound.Min.L = 0
-	}
+	w.MoveUp(w.Bound.Size.L)
 }
 
 // HalfPageForward moves a window a page forward.
 func (w *Window) HalfPageForward() {
-	w.Bound.Min.L += w.Bound.Size.L / 2
-	if w.Bound.Min.L >= len(w.Text) {
-		w.Bound.Min.L = len(w.Text) - 1
-	}
+	w.MoveDown(w.Bound.Size.L / 2)
 }
 
 // HalfPageBackward moves a window a page backward.
 func (w *Window) HalfPageBackward() {
-	w.Bound.Min.L -= w.Bound.Size.L / 2
-	if w.Bound.Min.L < 0 {
-		w.Bound.Min.L = 0
-	}
+	w.MoveUp(w.Bound.Size.L / 2)
 }
 
 // MoveUp
