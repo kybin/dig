@@ -210,16 +210,16 @@ func (a *DiffArea) Handle(ev termbox.Event) {
 		a.Win.HalfPageBackward()
 	}
 	if ev.Ch == 'i' || ev.Key == termbox.KeyArrowUp {
-		a.Win.MoveUp()
+		a.Win.MoveUp(8)
 	}
 	if ev.Ch == 'k' || ev.Key == termbox.KeyArrowDown {
-		a.Win.MoveDown()
+		a.Win.MoveDown(8)
 	}
 	if ev.Ch == 'j' || ev.Key == termbox.KeyArrowLeft {
-		a.Win.MoveLeft()
+		a.Win.MoveLeft(16)
 	}
 	if ev.Ch == 'l' || ev.Key == termbox.KeyArrowRight {
-		a.Win.MoveRight()
+		a.Win.MoveRight(16)
 	}
 }
 
@@ -307,32 +307,32 @@ func (w *Window) HalfPageBackward() {
 }
 
 // MoveUp
-func (w *Window) MoveUp() {
-	w.Bound.Min.L -= 1
+func (w *Window) MoveUp(n int) {
+	w.Bound.Min.L -= n
 	if w.Bound.Min.L < 0 {
 		w.Bound.Min.L = 0
 	}
 }
 
 // MoveDown
-func (w *Window) MoveDown() {
-	w.Bound.Min.L += 1
+func (w *Window) MoveDown(n int) {
+	w.Bound.Min.L += n
 	if w.Bound.Min.L >= len(w.Text) {
 		w.Bound.Min.L = len(w.Text) - 1
 	}
 }
 
 // MoveLeft
-func (w *Window) MoveLeft() {
-	w.Bound.Min.O -= 1
+func (w *Window) MoveLeft(n int) {
+	w.Bound.Min.O -= n
 	if w.Bound.Min.O < 0 {
 		w.Bound.Min.O = 0
 	}
 }
 
 // MoveRight
-func (w *Window) MoveRight() {
-	w.Bound.Min.O += 1
+func (w *Window) MoveRight(n int) {
+	w.Bound.Min.O += n
 }
 
 // Rect is a rectangle.
