@@ -57,13 +57,20 @@ func calcAreaBounds(size Pt, hideSide bool) (side Rect, main Rect) {
 	if hideSide {
 		sideWidth = 0
 	}
-	mainWidth := size.O - sideWidth
+	mainStart := sideWidth
+	if !hideSide {
+		mainStart += 3 // divide areas
+	}
+	mainWidth := size.O - mainStart
+	if mainWidth < 0 {
+		mainWidth = 0
+	}
 	side = Rect{
 		Min:  Pt{0, 0},
 		Size: Pt{size.L, sideWidth},
 	}
 	main = Rect{
-		Min:  Pt{0, sideWidth},
+		Min:  Pt{0, mainStart},
 		Size: Pt{size.L, mainWidth},
 	}
 	return side, main
