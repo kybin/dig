@@ -209,6 +209,18 @@ func (a *DiffArea) Handle(ev termbox.Event) {
 	if ev.Ch == 'u' {
 		a.Win.HalfPageBackward()
 	}
+	if ev.Ch == 'i' || ev.Key == termbox.KeyArrowUp {
+		a.Win.MoveUp()
+	}
+	if ev.Ch == 'k' || ev.Key == termbox.KeyArrowDown {
+		a.Win.MoveDown()
+	}
+	if ev.Ch == 'j' || ev.Key == termbox.KeyArrowLeft {
+		a.Win.MoveLeft()
+	}
+	if ev.Ch == 'l' || ev.Key == termbox.KeyArrowRight {
+		a.Win.MoveRight()
+	}
 }
 
 // Draw draws it's contents.
@@ -295,9 +307,33 @@ func (w *Window) HalfPageBackward() {
 }
 
 // MoveUp
+func (w *Window) MoveUp() {
+	w.Bound.Min.L -= 1
+	if w.Bound.Min.L < 0 {
+		w.Bound.Min.L = 0
+	}
+}
+
 // MoveDown
+func (w *Window) MoveDown() {
+	w.Bound.Min.L += 1
+	if w.Bound.Min.L >= len(w.Text) {
+		w.Bound.Min.L = len(w.Text) - 1
+	}
+}
+
 // MoveLeft
+func (w *Window) MoveLeft() {
+	w.Bound.Min.O -= 1
+	if w.Bound.Min.O < 0 {
+		w.Bound.Min.O = 0
+	}
+}
+
 // MoveRight
+func (w *Window) MoveRight() {
+	w.Bound.Min.O += 1
+}
 
 // Rect is a rectangle.
 type Rect struct {
