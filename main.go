@@ -267,7 +267,9 @@ func (a *DiffArea) Draw() {
 			}
 			r, size := utf8.DecodeRune(remain)
 			remain = remain[size:]
-			termbox.SetCell(a.Bound.Min.O-a.Win.Bound.Min.O+o, a.Bound.Min.L+l, r, c.Fg, c.Bg)
+			if o-a.Win.Bound.Min.O >= 0 {
+				termbox.SetCell(a.Bound.Min.O-a.Win.Bound.Min.O+o, a.Bound.Min.L+l, r, c.Fg, c.Bg)
+			}
 			o += runewidth.RuneWidth(r)
 		}
 	}
