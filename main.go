@@ -30,22 +30,14 @@ type Screen struct {
 // NewScreen creates a new Screen.
 // It will also create it's sub areas.
 func NewScreen(size Pt, commits []*Commit) *Screen {
-	side, main := calcAreaBounds(size, false, 40, 0)
 	s := &Screen{
 		size:               size,
-		visibleSideWidth:   40,
-		invisibleSideWidth: 40,
+		visibleSideWidth:   60,
+		invisibleSideWidth: 30,
+		Side:               &ItemArea{Commits: commits},
+		Main:               &DiffArea{Win: &Window{}},
 	}
-	s.Side = &ItemArea{
-		Bound:   side,
-		Commits: commits,
-	}
-	s.Main = &DiffArea{
-		Bound: main,
-		Win: &Window{
-			Bound: main,
-		},
-	}
+	s.Resize(size)
 	return s
 }
 
@@ -57,42 +49,36 @@ func (s *Screen) Draw() {
 	s.Main.Draw()
 }
 
-// calcAreaBounds calculates screen's sub area's boxes.
-func calcAreaBounds(scrSize Pt, hideSide bool, visibleSideWidth, invisibleSideWidth int) (side Rect, main Rect) {
-	sideWidth := visibleSideWidth
-	if hideSide {
-		sideWidth = invisibleSideWidth
+// Resize resizes the screen and re-fit sub areas.
+func (s *Screen) Resize(size Pt) {
+	s.size = size
+
+	sideWidth := s.visibleSideWidth
+	if s.hideSide {
+		sideWidth = s.invisibleSideWidth
 	}
-	if sideWidth > scrSize.O {
-		sideWidth = scrSize.O
+	if sideWidth > size.O {
+		sideWidth = size.O
 	}
 
 	mainStart := sideWidth
-	if !hideSide {
+	if !s.hideSide {
 		mainStart += 3 // divide areas
 	}
-	mainWidth := scrSize.O - mainStart
+	mainWidth := size.O - mainStart
 	if mainWidth < 0 {
 		mainWidth = 0
 	}
 
-	side = Rect{
+	s.Side.Bound = Rect{
 		Min:  Pt{0, 0},
-		Size: Pt{scrSize.L, sideWidth},
+		Size: Pt{size.L, sideWidth},
 	}
-	main = Rect{
+	s.Main.Bound = Rect{
 		Min:  Pt{0, mainStart},
-		Size: Pt{scrSize.L, mainWidth},
+		Size: Pt{size.L, mainWidth},
 	}
-	return side, main
-}
-
-// Resize resizes the screen and re-fit sub areas.
-func (s *Screen) Resize(size Pt) {
-	s.size = size
-	side, main := calcAreaBounds(size, s.hideSide, s.visibleSideWidth, s.invisibleSideWidth)
-	s.Side.Bound = side
-	s.Main.Bound = main
+	s.Main.Win.Bound.Size = s.Main.Bound.Size
 }
 
 // SideShowing returns whether Side area is showing or not.
