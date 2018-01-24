@@ -232,16 +232,16 @@ func (a *DiffArea) Handle(ev termbox.Event) {
 		a.Win.HalfPageBackward()
 	}
 	if ev.Ch == 'i' {
-		a.Win.MoveUp(8)
+		a.Win.MoveUp(1)
 	}
 	if ev.Ch == 'k' {
-		a.Win.MoveDown(8)
+		a.Win.MoveDown(1)
 	}
 	if ev.Ch == 'j' {
-		a.Win.MoveLeft(16)
+		a.Win.MoveLeft(4)
 	}
 	if ev.Ch == 'l' {
-		a.Win.MoveRight(16)
+		a.Win.MoveRight(4)
 	}
 }
 
