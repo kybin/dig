@@ -84,13 +84,15 @@ func (s *Screen) Resize(size Pt) {
 	s.Main.Bound = main
 }
 
-// ToggleSide shows or hides it's Side screen and return the result.
-// It it already shows, it will hide. And vice versa.
-// When it shows it will
-func (s *Screen) ToggleSide(show bool) bool {
-	s.hideSide = !s.hideSide
-	s.Resize(s.size)
+// SideShowing returns whether Side area is showing or not.
+func (s *Screen) SideShowing() bool {
 	return !s.hideSide
+}
+
+// ShowSide shows or hides it's Side screen.
+func (s *Screen) ShowSide(show bool) {
+	s.hideSide = !show
+	s.Resize(s.size)
 }
 
 // Area handles terminal events and draw it's contents.
@@ -435,11 +437,13 @@ func main() {
 			case termbox.KeyCtrlQ:
 				return
 			case termbox.KeyEnter:
-				show := screen.ToggleSide(false)
-				if show {
-					curArea = screen.Side
-				} else {
+				// toggle side
+				if screen.SideShowing() {
+					screen.ShowSide(false)
 					curArea = screen.Main
+				} else {
+					screen.ShowSide(true)
+					curArea = screen.Side
 				}
 			}
 			// handle sub area event
