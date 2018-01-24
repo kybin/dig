@@ -107,12 +107,6 @@ func (s *Screen) ShowSide(show bool) {
 	s.Resize(s.size)
 }
 
-// Area handles terminal events and draw it's contents.
-type Area interface {
-	Handle(termbox.Event)
-	Draw()
-}
-
 // fillColor fills color to the bound.
 func fillColor(bound Rect, c Color) {
 	min := bound.Min
