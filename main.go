@@ -23,8 +23,9 @@ type Screen struct {
 	visibleSideWidth   int
 	invisibleSideWidth int
 
-	Side *ItemArea
-	Main *DiffArea
+	Side   *ItemArea
+	Main   *DiffArea
+	Status *StatusArea
 }
 
 // NewScreen creates a new Screen.
@@ -36,6 +37,7 @@ func NewScreen(size Pt, commits []*Commit) *Screen {
 		invisibleSideWidth: 30,
 		Side:               &ItemArea{Commits: commits},
 		Main:               &DiffArea{Win: &Window{}},
+		Status:             &StatusArea{},
 	}
 	s.Resize(size)
 	return s
@@ -47,6 +49,7 @@ func (s *Screen) Draw() {
 		s.Side.Draw()
 	}
 	s.Main.Draw()
+	s.Status.Draw()
 }
 
 // Resize resizes the screen and re-fit sub areas.
@@ -72,13 +75,17 @@ func (s *Screen) Resize(size Pt) {
 
 	s.Side.Bound = Rect{
 		Min:  Pt{0, 0},
-		Size: Pt{size.L, sideWidth},
+		Size: Pt{size.L - 1, sideWidth},
 	}
 	s.Main.Bound = Rect{
 		Min:  Pt{0, mainStart},
-		Size: Pt{size.L, mainWidth},
+		Size: Pt{size.L - 1, mainWidth},
 	}
 	s.Main.Win.Bound.Size = s.Main.Bound.Size
+	s.Status.Bound = Rect{
+		Min:  Pt{size.L - 1, 0},
+		Size: Pt{1, size.O},
+	}
 }
 
 // SideShowing returns whether Side area is showing or not.
@@ -343,6 +350,29 @@ func (w *Window) MoveLeft(n int) {
 // TODO: When it hits the boundary it stops.
 func (w *Window) MoveRight(n int) {
 	w.Bound.Min.O += n
+}
+
+type StatusArea struct {
+	Bound Rect
+}
+
+func (a StatusArea) Draw() {
+	help := "CtrlQ: quit, Down: next commit, Up: prev commit, f: page down, b: page up, <: shirink side, >: expand side"
+	remain := help
+	o := 0
+	for {
+		if len(remain) == 0 {
+			break
+		}
+		r, size := utf8.DecodeRuneInString(remain)
+		remain = remain[size:]
+		termbox.SetCell(o, a.Bound.Min.L, r, termbox.ColorBlack, termbox.ColorWhite)
+		o += runewidth.RuneWidth(r)
+	}
+	for o < a.Bound.Size.O {
+		termbox.SetCell(o, a.Bound.Min.L, ' ', termbox.ColorBlack, termbox.ColorWhite)
+		o++
+	}
 }
 
 // Rect is a rectangle.
