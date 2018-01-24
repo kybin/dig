@@ -20,6 +20,9 @@ type Screen struct {
 	size     Pt
 	hideSide bool
 
+	visibleSideWidth   int
+	invisibleSideWidth int
+
 	Side *ItemArea
 	Main *DiffArea
 }
@@ -27,8 +30,12 @@ type Screen struct {
 // NewScreen creates a new Screen.
 // It will also create it's sub areas.
 func NewScreen(size Pt, commits []*Commit) *Screen {
-	side, main := calcAreaBounds(size, false)
-	s := &Screen{size: size}
+	side, main := calcAreaBounds(size, false, 40, 0)
+	s := &Screen{
+		size:               size,
+		visibleSideWidth:   40,
+		invisibleSideWidth: 40,
+	}
 	s.Side = &ItemArea{
 		Bound:   side,
 		Commits: commits,
@@ -44,34 +51,38 @@ func NewScreen(size Pt, commits []*Commit) *Screen {
 
 // Draw draws the screen.
 func (s *Screen) Draw() {
-	s.Side.Draw()
+	if !s.hideSide {
+		s.Side.Draw()
+	}
 	s.Main.Draw()
 }
 
-// calcAreaBounds calculates it's sub area's boxes.
-func calcAreaBounds(size Pt, hideSide bool) (side Rect, main Rect) {
-	sideWidth := 40
-	if size.O < 40 {
-		sideWidth = size.O
-	}
+// calcAreaBounds calculates screen's sub area's boxes.
+func calcAreaBounds(scrSize Pt, hideSide bool, visibleSideWidth, invisibleSideWidth int) (side Rect, main Rect) {
+	sideWidth := visibleSideWidth
 	if hideSide {
-		sideWidth = 0
+		sideWidth = invisibleSideWidth
 	}
+	if sideWidth > scrSize.O {
+		sideWidth = scrSize.O
+	}
+
 	mainStart := sideWidth
 	if !hideSide {
 		mainStart += 3 // divide areas
 	}
-	mainWidth := size.O - mainStart
+	mainWidth := scrSize.O - mainStart
 	if mainWidth < 0 {
 		mainWidth = 0
 	}
+
 	side = Rect{
 		Min:  Pt{0, 0},
-		Size: Pt{size.L, sideWidth},
+		Size: Pt{scrSize.L, sideWidth},
 	}
 	main = Rect{
 		Min:  Pt{0, mainStart},
-		Size: Pt{size.L, mainWidth},
+		Size: Pt{scrSize.L, mainWidth},
 	}
 	return side, main
 }
@@ -79,7 +90,7 @@ func calcAreaBounds(size Pt, hideSide bool) (side Rect, main Rect) {
 // Resize resizes the screen and re-fit sub areas.
 func (s *Screen) Resize(size Pt) {
 	s.size = size
-	side, main := calcAreaBounds(size, s.hideSide)
+	side, main := calcAreaBounds(size, s.hideSide, s.visibleSideWidth, s.invisibleSideWidth)
 	s.Side.Bound = side
 	s.Main.Bound = main
 }
@@ -87,6 +98,21 @@ func (s *Screen) Resize(size Pt) {
 // SideShowing returns whether Side area is showing or not.
 func (s *Screen) SideShowing() bool {
 	return !s.hideSide
+}
+
+func (s *Screen) ExpandSide(n int) {
+	if s.hideSide {
+		s.invisibleSideWidth += n
+		if s.invisibleSideWidth < 0 {
+			s.invisibleSideWidth = 0
+		}
+	} else {
+		s.visibleSideWidth += n
+		if s.visibleSideWidth < 0 {
+			s.visibleSideWidth = 0
+		}
+	}
+	s.Resize(s.size)
 }
 
 // ShowSide shows or hides it's Side screen.
@@ -446,6 +472,12 @@ func main() {
 				}
 			case termbox.KeyEsc:
 				screen.ShowSide(true)
+			}
+			switch ev.Ch {
+			case '<':
+				screen.ExpandSide(-1)
+			case '>':
+				screen.ExpandSide(1)
 			}
 			screen.Side.Handle(ev)
 			screen.Main.Handle(ev)
