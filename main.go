@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"os"
 	"os/exec"
@@ -406,7 +407,7 @@ type Commit struct {
 }
 
 // allCommits find a repository and get it's commits.
-func allCommits(repodir string) ([]*Commit, error) {
+func allCommits(repodir string, reverseDir bool) ([]*Commit, error) {
 	cmd := exec.Command("git", "log", "--pretty=format:%H%n%s%n")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -418,7 +419,11 @@ func allCommits(repodir string) ([]*Commit, error) {
 	commitStrings := strings.Split(string(out), "\n\n")
 	last := len(commitStrings) - 1
 	for i := range commitStrings {
-		c := commitStrings[last-i] // first commit live at last.
+		j := i
+		if reverseDir {
+			j = last - i
+		}
+		c := commitStrings[j] // first commit live at last.
 		l := strings.Split(c, "\n")
 		commits = append(commits, &Commit{Hash: l[0], Title: l[1]})
 	}
@@ -439,7 +444,10 @@ func commitDiff(hash string) ([][]byte, error) {
 }
 
 func main() {
-	commits, err := allCommits(".")
+	digUp := flag.Bool("up", false, "dig up from initial commit")
+	flag.Parse()
+
+	commits, err := allCommits(".", *digUp)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "could not get commits: %v", err)
 	}
