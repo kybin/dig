@@ -207,10 +207,10 @@ type DiffArea struct {
 
 // Handle handles a terminal event.
 func (a *DiffArea) Handle(ev termbox.Event) {
-	if ev.Ch == 'f' || ev.Key == termbox.KeyPgdn {
+	if ev.Ch == 'f' {
 		a.Win.PageForward()
 	}
-	if ev.Ch == 'b' || ev.Key == termbox.KeyPgup {
+	if ev.Ch == 'b' {
 		a.Win.PageBackward()
 	}
 	if ev.Ch == 'd' {
@@ -219,16 +219,16 @@ func (a *DiffArea) Handle(ev termbox.Event) {
 	if ev.Ch == 'u' {
 		a.Win.HalfPageBackward()
 	}
-	if ev.Ch == 'i' || ev.Key == termbox.KeyArrowUp {
+	if ev.Ch == 'i' {
 		a.Win.MoveUp(8)
 	}
-	if ev.Ch == 'k' || ev.Key == termbox.KeyArrowDown {
+	if ev.Ch == 'k' {
 		a.Win.MoveDown(8)
 	}
-	if ev.Ch == 'j' || ev.Key == termbox.KeyArrowLeft {
+	if ev.Ch == 'j' {
 		a.Win.MoveLeft(16)
 	}
-	if ev.Ch == 'l' || ev.Key == termbox.KeyArrowRight {
+	if ev.Ch == 'l' {
 		a.Win.MoveRight(16)
 	}
 }
@@ -423,7 +423,6 @@ func main() {
 		}
 	}()
 
-	curArea := Area(screen.Side)
 	for {
 		termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 		screen.Draw()
@@ -440,17 +439,14 @@ func main() {
 				// toggle side
 				if screen.SideShowing() {
 					screen.ShowSide(false)
-					curArea = screen.Main
 				} else {
 					screen.ShowSide(true)
-					curArea = screen.Side
 				}
 			case termbox.KeyEsc:
 				screen.ShowSide(true)
-				curArea = screen.Side
 			}
-			// handle sub area event
-			curArea.Handle(ev)
+			screen.Side.Handle(ev)
+			screen.Main.Handle(ev)
 		case termbox.EventResize:
 			w, h := termbox.Size()
 			size := Pt{h, w}
