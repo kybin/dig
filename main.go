@@ -445,6 +445,9 @@ func main() {
 					screen.ShowSide(true)
 					curArea = screen.Side
 				}
+			case termbox.KeyEsc:
+				screen.ShowSide(true)
+				curArea = screen.Side
 			}
 			// handle sub area event
 			curArea.Handle(ev)
