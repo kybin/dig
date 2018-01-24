@@ -409,6 +409,7 @@ type Commit struct {
 // allCommits find a repository and get it's commits.
 func allCommits(repodir string, reverseDir bool) ([]*Commit, error) {
 	cmd := exec.Command("git", "log", "--pretty=format:%H%n%s%n")
+	cmd.Dir = repodir
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, err
@@ -445,9 +446,10 @@ func commitDiff(hash string) ([][]byte, error) {
 
 func main() {
 	digUp := flag.Bool("up", false, "dig up from initial commit")
+	repoDir := flag.String("C", ".", "git repository to dig")
 	flag.Parse()
 
-	commits, err := allCommits(".", *digUp)
+	commits, err := allCommits(*repoDir, *digUp)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "could not get commits: %v", err)
 	}
