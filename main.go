@@ -357,7 +357,7 @@ type StatusArea struct {
 }
 
 func (a StatusArea) Draw() {
-	help := "CtrlQ: quit, Down: next commit, Up: prev commit, f: page down, b: page up, <: shirink side, >: expand side"
+	help := "q: quit, Down: next commit, Up: prev commit, f: page down, b: page up, <: shirink side, >: expand side"
 	remain := help
 	o := 0
 	for {
@@ -471,8 +471,6 @@ func main() {
 		case termbox.EventKey:
 			// handle global event
 			switch ev.Key {
-			case termbox.KeyCtrlQ:
-				return
 			case termbox.KeyEnter:
 				// toggle side
 				if screen.SideShowing() {
@@ -484,6 +482,8 @@ func main() {
 				screen.ShowSide(true)
 			}
 			switch ev.Ch {
+			case 'q':
+				return
 			case '<':
 				screen.ExpandSide(-1)
 			case '>':
