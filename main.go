@@ -93,6 +93,13 @@ func (s *Screen) SideShowing() bool {
 	return !s.hideSide
 }
 
+// ShowSide shows or hides it's Side screen.
+func (s *Screen) ShowSide(show bool) {
+	s.hideSide = !show
+	s.Resize(s.size)
+}
+
+// ExpandSide expands or shirinks it's Side screen.
 func (s *Screen) ExpandSide(n int) {
 	if s.hideSide {
 		s.invisibleSideWidth += n
@@ -105,12 +112,6 @@ func (s *Screen) ExpandSide(n int) {
 			s.visibleSideWidth = 0
 		}
 	}
-	s.Resize(s.size)
-}
-
-// ShowSide shows or hides it's Side screen.
-func (s *Screen) ShowSide(show bool) {
-	s.hideSide = !show
 	s.Resize(s.size)
 }
 
