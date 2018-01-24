@@ -505,6 +505,10 @@ func main() {
 			screen.Side.Handle(ev)
 			screen.Main.Handle(ev)
 		case termbox.EventResize:
+			// weird, but terminal(or termbox?) should be cleared
+			// before checking the terminal size
+			// when user changes the terminal window to fullscreen.
+			termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 			w, h := termbox.Size()
 			size := Pt{h, w}
 			screen.Resize(size)
