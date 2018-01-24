@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -412,7 +413,7 @@ func allCommits(repodir string, reverseDir bool) ([]*Commit, error) {
 	cmd.Dir = repodir
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, err
+		return nil, errors.New(string(out))
 	}
 	// tab handling in screen is quite awkard. handle it here.
 	out = bytes.Replace(out, []byte("\t"), []byte("    "), -1)
@@ -451,7 +452,8 @@ func main() {
 
 	commits, err := allCommits(*repoDir, *digUp)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "could not get commits: %v", err)
+		fmt.Fprintf(os.Stderr, "could not get commits: %v\n", err)
+		os.Exit(1)
 	}
 
 	err = termbox.Init()
