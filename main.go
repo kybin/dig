@@ -499,6 +499,8 @@ func main() {
 		case termbox.EventKey:
 			// handle global event
 			switch ev.Key {
+			case termbox.KeyCtrlQ:
+				return
 			case termbox.KeyEnter:
 				// toggle side
 				if screen.SideShowing() {
