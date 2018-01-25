@@ -444,6 +444,7 @@ func allCommits(repodir string, reverseDir bool) ([]*Commit, error) {
 // commitDiff returns changes of a commit.
 func commitDiff(hash string) ([][]byte, error) {
 	cmd := exec.Command("git", "show", hash)
+	cmd.Dir = dig.RepoDir
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, err
