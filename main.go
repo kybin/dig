@@ -281,7 +281,10 @@ func (a *DiffArea) Draw() {
 				c = Color{termbox.ColorRed, termbox.ColorBlack}
 			}
 		}
-		o := 0
+		// relative offset in window
+		// we can't just clipping remain, as we did with a.Text's lines (l).
+		// because o should be calculated rune by rune.
+		o := -a.Win.Bound.Min.O
 		remain := ln
 		for {
 			if len(remain) == 0 {
@@ -292,8 +295,8 @@ func (a *DiffArea) Draw() {
 			}
 			r, size := utf8.DecodeRune(remain)
 			remain = remain[size:]
-			if o-a.Win.Bound.Min.O >= 0 {
-				termbox.SetCell(a.Bound.Min.O-a.Win.Bound.Min.O+o, a.Bound.Min.L+l, r, c.Fg, c.Bg)
+			if o >= 0 {
+				termbox.SetCell(a.Bound.Min.O+o, a.Bound.Min.L+l, r, c.Fg, c.Bg)
 			}
 			o += runewidth.RuneWidth(r)
 		}
