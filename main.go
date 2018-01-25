@@ -417,7 +417,7 @@ type Commit struct {
 }
 
 // allCommits find a repository and get it's commits.
-func allCommits(repodir string, reverseDir bool) ([]*Commit, error) {
+func allCommits(repodir string, digUp bool) ([]*Commit, error) {
 	cmd := exec.Command("git", "log", "--pretty=format:%H%n%s%n")
 	cmd.Dir = repodir
 	out, err := cmd.CombinedOutput()
@@ -431,7 +431,7 @@ func allCommits(repodir string, reverseDir bool) ([]*Commit, error) {
 	last := len(commitStrings) - 1
 	for i := range commitStrings {
 		j := i
-		if reverseDir {
+		if digUp {
 			j = last - i
 		}
 		c := commitStrings[j] // first commit live at last.
