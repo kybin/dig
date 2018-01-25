@@ -14,7 +14,16 @@ import (
 	termbox "github.com/nsf/termbox-go"
 )
 
-// screen is a singleton variable for Screen.
+// dig indicates this program.
+var dig *Program
+
+// Program is a program.
+type Program struct {
+	RepoDir string
+	Commits []*Commit
+}
+
+// screen indicates this program screen.
 var screen *Screen
 
 // Screen is a program screen.
@@ -32,12 +41,12 @@ type Screen struct {
 
 // NewScreen creates a new Screen.
 // It will also create it's sub areas.
-func NewScreen(size Pt, commits []*Commit) *Screen {
+func NewScreen(size Pt) *Screen {
 	s := &Screen{
 		size:               size,
 		visibleSideWidth:   60,
 		invisibleSideWidth: 30,
-		Side:               &ItemArea{Commits: commits},
+		Side:               &ItemArea{},
 		Main:               &DiffArea{Win: &Window{}},
 		Status:             &StatusArea{},
 	}
@@ -150,14 +159,14 @@ func (a *ItemArea) Handle(ev termbox.Event) {
 	case termbox.KeyHome:
 		a.CurIdx = 0
 	case termbox.KeyEnd:
-		a.CurIdx = len(a.Commits) - 1
+		a.CurIdx = len(dig.Commits) - 1
 	}
 	// validation
 	if a.CurIdx < 0 {
 		a.CurIdx = 0
 	}
-	if a.CurIdx >= len(a.Commits) {
-		a.CurIdx = len(a.Commits) - 1
+	if a.CurIdx >= len(dig.Commits) {
+		a.CurIdx = len(dig.Commits) - 1
 	}
 
 	if a.TopIdx > a.CurIdx {
@@ -172,10 +181,10 @@ func (a *ItemArea) Draw() {
 	top := a.TopIdx
 	bottom := top + a.Bound.Size.L
 	for i := top; i < bottom; i++ {
-		if i == len(a.Commits) {
+		if i == len(dig.Commits) {
 			break
 		}
-		commit := a.Commits[i]
+		commit := dig.Commits[i]
 
 		c := Color{Fg: termbox.ColorWhite, Bg: termbox.ColorBlack}
 		if i == a.CurIdx {
@@ -209,7 +218,7 @@ func (a *ItemArea) Draw() {
 
 // Commit is currently selected commit.
 func (a *ItemArea) Commit() *Commit {
-	return a.Commits[a.CurIdx]
+	return dig.Commits[a.CurIdx]
 }
 
 // DiffArea is an Area for showing diff outputs.
@@ -465,7 +474,12 @@ func main() {
 
 	w, h := termbox.Size()
 	size := Pt{h, w}
-	screen = NewScreen(size, commits)
+	screen = NewScreen(size)
+
+	dig = &Program{
+		*repoDir,
+		commits,
+	}
 
 	events := make(chan termbox.Event, 20)
 	go func() {
