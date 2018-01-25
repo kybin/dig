@@ -456,11 +456,22 @@ func commitDiff(hash string) ([][]byte, error) {
 }
 
 func main() {
-	digUp := flag.Bool("up", false, "dig up from initial commit")
+	up := flag.Bool("up", false, "dig up from initial commit (don't use with -down)")
+	down := flag.Bool("down", false, "dig down from latest commit (don't use with -up)")
 	repoDir := flag.String("C", ".", "git repository to dig")
 	flag.Parse()
 
-	commits, err := allCommits(*repoDir, *digUp)
+	var digUp bool
+	if *up && *down {
+		flag.Usage()
+		os.Exit(2)
+	} else if *down {
+		digUp = false
+	} else {
+		digUp = true
+	}
+
+	commits, err := allCommits(*repoDir, digUp)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "could not get commits: %v\n", err)
 		os.Exit(1)
