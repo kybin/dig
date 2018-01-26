@@ -179,16 +179,16 @@ func (a *ItemArea) Handle(ev termbox.Event) {
 	if a.CurIdx >= len(dig.Commits) {
 		a.CurIdx = len(dig.Commits) - 1
 	}
+}
 
+// Draw draws it's contents.
+func (a *ItemArea) Draw() {
 	if a.TopIdx > a.CurIdx {
 		a.TopIdx = a.CurIdx
 	} else if a.TopIdx+a.Bound.Size.L <= a.CurIdx {
 		a.TopIdx = a.CurIdx - a.Bound.Size.L + 1
 	}
-}
 
-// Draw draws it's contents.
-func (a *ItemArea) Draw() {
 	top := a.TopIdx
 	bottom := top + a.Bound.Size.L
 	for i := top; i < bottom; i++ {
