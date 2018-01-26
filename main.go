@@ -19,9 +19,20 @@ var dig *Program
 
 // Program is a program.
 type Program struct {
+	Mode    Mode
 	RepoDir string
 	Commits []*Commit
+
+	FindString string
 }
+
+// Mode is mode of program.
+type Mode int
+
+const (
+	NormalMode = Mode(iota)
+	FindMode
+)
 
 // screen indicates this program screen.
 var screen *Screen
@@ -372,8 +383,13 @@ type StatusArea struct {
 }
 
 func (a StatusArea) Draw() {
-	help := "q: quit, Down: next commit, Up: prev commit, f: page down, b: page up, <: shirink side, >: expand side"
-	remain := help
+	var drawString string
+	if dig.Mode == NormalMode {
+		drawString = "q: quit, Down: next commit, Up: prev commit, f: page down, b: page up, <: shirink side, >: expand side"
+	} else if dig.Mode == FindMode {
+		drawString = "find: " + dig.FindString
+	}
+	remain := drawString
 	o := 0
 	for {
 		if len(remain) == 0 {
@@ -458,6 +474,101 @@ func commitDiff(hash string) ([][]byte, error) {
 	return lines, err
 }
 
+// handleNormal handles NormalMode events.
+// When the event was handled, it will return true.
+func handleNormal(ev termbox.Event) bool {
+	switch ev.Key {
+	case termbox.KeyEnter:
+		// toggle side
+		if screen.SideShowing() {
+			screen.ShowSide(false)
+		} else {
+			screen.ShowSide(true)
+		}
+		return true
+	case termbox.KeyEsc:
+		screen.ShowSide(true)
+		return true
+	case termbox.KeyCtrlF:
+		dig.Mode = FindMode
+		return true
+	}
+	switch ev.Ch {
+	case '<':
+		screen.ExpandSide(-1)
+		return true
+	case '>':
+		screen.ExpandSide(1)
+		return true
+	}
+	return false
+}
+
+// handleFind handles FindMode events.
+// When the event was handled, it will return true.
+func handleFind(ev termbox.Event) bool {
+	switch ev.Key {
+	case termbox.KeyEsc, termbox.KeyCtrlQ, termbox.KeyCtrlK:
+		dig.FindString = ""
+		dig.Mode = NormalMode
+		return true
+	case termbox.KeyEnter:
+		from := nextIdx(dig.Commits, screen.Side.CurIdx)
+		if idx := findByHash(dig.Commits, dig.FindString, from); idx != -1 {
+			screen.Side.CurIdx = idx
+		}
+		if idx := findByWord(dig.Commits, dig.FindString, from); idx != -1 {
+			screen.Side.CurIdx = idx
+		}
+		return true
+	case termbox.KeyBackspace, termbox.KeyBackspace2:
+		_, size := utf8.DecodeLastRuneInString(dig.FindString)
+		dig.FindString = dig.FindString[:len(dig.FindString)-size]
+		return true
+	}
+	dig.FindString += string(ev.Ch)
+	return true
+}
+
+// nextIdx returns next index from commits.
+// If reached the last commit index, it will return 0.
+func nextIdx(commits []*Commit, i int) int {
+	if i == len(commits)-1 {
+		return 0
+	}
+	return i + 1
+}
+
+// findByHash finds a commit by hash.
+func findByHash(commits []*Commit, hash string, from int) int {
+	for i, c := range commits[from:] {
+		if c.Hash == hash {
+			return from + i
+		}
+	}
+	for i, c := range commits[:from] {
+		if c.Hash == hash {
+			return i
+		}
+	}
+	return -1
+}
+
+// findByWord finds next commit by word inside of title of commits.
+func findByWord(commits []*Commit, word string, from int) int {
+	for i, c := range commits[from:] {
+		if strings.Contains(c.Title, word) {
+			return from + i
+		}
+	}
+	for i, c := range commits[:from] {
+		if strings.Contains(c.Title, word) {
+			return i
+		}
+	}
+	return -1
+}
+
 func main() {
 	up := flag.Bool("up", false, "dig up from initial commit (don't use with -down)")
 	down := flag.Bool("down", false, "dig down from latest commit (don't use with -up)")
@@ -492,8 +603,10 @@ func main() {
 	screen = NewScreen(size)
 
 	dig = &Program{
+		NormalMode,
 		*repoDir,
 		commits,
+		"",
 	}
 
 	events := make(chan termbox.Event, 20)
@@ -512,29 +625,23 @@ func main() {
 		switch ev.Type {
 		case termbox.EventKey:
 			// handle global event
-			switch ev.Key {
-			case termbox.KeyCtrlQ:
-				return
-			case termbox.KeyEnter:
-				// toggle side
-				if screen.SideShowing() {
-					screen.ShowSide(false)
-				} else {
-					screen.ShowSide(true)
+			if dig.Mode == NormalMode {
+				// exit handling could not be inside of a function.
+				if ev.Key == termbox.KeyCtrlQ || ev.Ch == 'q' {
+					return
 				}
-			case termbox.KeyEsc:
-				screen.ShowSide(true)
 			}
-			switch ev.Ch {
-			case 'q':
-				return
-			case '<':
-				screen.ExpandSide(-1)
-			case '>':
-				screen.ExpandSide(1)
+			if dig.Mode == NormalMode {
+				if ok := handleNormal(ev); ok {
+					continue
+				}
+				screen.Side.Handle(ev)
+				screen.Main.Handle(ev)
+			} else if dig.Mode == FindMode {
+				if ok := handleFind(ev); ok {
+					continue
+				}
 			}
-			screen.Side.Handle(ev)
-			screen.Main.Handle(ev)
 		case termbox.EventResize:
 			// weird, but terminal(or termbox?) should be cleared
 			// before checking the terminal size
