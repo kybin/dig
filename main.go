@@ -157,7 +157,7 @@ type ItemArea struct {
 }
 
 // Handle handles a terminal event.
-func (a *ItemArea) Handle(ev termbox.Event) {
+func (a *ItemArea) Handle(ev termbox.Event) bool {
 	switch ev.Key {
 	case termbox.KeyArrowUp:
 		a.CurIdx--
@@ -171,6 +171,8 @@ func (a *ItemArea) Handle(ev termbox.Event) {
 		a.CurIdx = 0
 	case termbox.KeyEnd:
 		a.CurIdx = len(dig.Commits) - 1
+	default:
+		return false
 	}
 	// validation
 	if a.CurIdx < 0 {
@@ -179,6 +181,7 @@ func (a *ItemArea) Handle(ev termbox.Event) {
 	if a.CurIdx >= len(dig.Commits) {
 		a.CurIdx = len(dig.Commits) - 1
 	}
+	return true
 }
 
 // Draw draws it's contents.
@@ -242,31 +245,28 @@ type DiffArea struct {
 }
 
 // Handle handles a terminal event.
-func (a *DiffArea) Handle(ev termbox.Event) {
-	if ev.Ch == 'f' {
+func (a *DiffArea) Handle(ev termbox.Event) bool {
+	switch ev.Ch {
+	case 'f':
 		a.Win.PageForward()
-	}
-	if ev.Ch == 'b' {
+	case 'b':
 		a.Win.PageBackward()
-	}
-	if ev.Ch == 'd' {
+	case 'd':
 		a.Win.HalfPageForward()
-	}
-	if ev.Ch == 'u' {
+	case 'u':
 		a.Win.HalfPageBackward()
-	}
-	if ev.Ch == 'i' {
+	case 'i':
 		a.Win.MoveUp(1)
-	}
-	if ev.Ch == 'k' {
+	case 'k':
 		a.Win.MoveDown(1)
-	}
-	if ev.Ch == 'j' {
+	case 'j':
 		a.Win.MoveLeft(4)
-	}
-	if ev.Ch == 'l' {
+	case 'l':
 		a.Win.MoveRight(4)
+	default:
+		return false
 	}
+	return true
 }
 
 // Draw draws it's contents.
@@ -635,8 +635,12 @@ func main() {
 				if ok := handleNormal(ev); ok {
 					continue
 				}
-				screen.Side.Handle(ev)
-				screen.Main.Handle(ev)
+				if ok := screen.Side.Handle(ev); ok {
+					continue
+				}
+				if ok := screen.Main.Handle(ev); ok {
+					continue
+				}
 			} else if dig.Mode == FindMode {
 				if ok := handleFind(ev); ok {
 					continue
