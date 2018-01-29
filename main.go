@@ -5,8 +5,11 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"os/user"
+	"path/filepath"
 	"strings"
 	"unicode/utf8"
 
@@ -569,6 +572,109 @@ func findByWord(commits []*Commit, word string, from int) int {
 	return -1
 }
 
+// saveCommit saves currently viewed commit.
+// So can restore with readView,
+// when dig opens this repository next time.
+func saveCommit(repoDir, hash string) error {
+	type view struct {
+		repo string
+		hash string
+	}
+
+	u, err := user.Current()
+	if err != nil {
+		return err
+	}
+	conf := filepath.Join(u.HomeDir, ".config", "dig", "commit")
+	if err := os.MkdirAll(filepath.Dir(conf), 0755); err != nil && !os.IsExist(err) {
+		return err
+	}
+
+	// read config
+	content, err := ioutil.ReadFile(conf)
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	views := []view{{repoDir, hash}} // last saved repo should placed first.
+	for _, ln := range strings.Split(string(content), "\n") {
+		if !strings.HasPrefix(ln, "\"") {
+			continue
+		}
+		ln = ln[1:]
+		idx := strings.Index(ln, "\"")
+		if idx == -1 {
+			continue
+		}
+		repo := ln[:idx]
+		if repo == repoDir {
+			continue
+		}
+		hash := strings.TrimSpace(ln[idx+1:])
+		if strings.Contains(hash, " ") || strings.Contains(hash, "\t") {
+			continue
+		}
+		views = append(views, view{repo, hash})
+	}
+
+	// write config
+	if len(views) > 1000 {
+		views = views[:1000] // limiting with 1000 latest repos
+	}
+	newContent := ""
+	for _, v := range views {
+		newContent += fmt.Sprintf("\"%s\" %s\n", v.repo, v.hash)
+	}
+	err = ioutil.WriteFile(conf, []byte(newContent), 0644)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// readCommit reads lastly viewed commit in this repository.
+func readCommit(repoDir string) (string, error) {
+	u, err := user.Current()
+	if err != nil {
+		return "", err
+	}
+	conf := filepath.Join(u.HomeDir, ".config", "dig", "commit")
+	if err := os.MkdirAll(filepath.Dir(conf), 0755); err != nil && !os.IsExist(err) {
+		return "", err
+	}
+
+	// read config
+	content, err := ioutil.ReadFile(conf)
+	if err != nil && !os.IsNotExist(err) {
+		return "", err
+	}
+	for _, ln := range strings.Split(string(content), "\n") {
+		if !strings.HasPrefix(ln, "\"") {
+			continue
+		}
+		ln = ln[1:]
+		idx := strings.Index(ln, "\"")
+		if idx == -1 {
+			continue
+		}
+		repo := ln[:idx]
+		if repo != repoDir {
+			continue
+		}
+		hash := strings.TrimSpace(ln[idx+1:])
+		if strings.Contains(hash, " ") || strings.Contains(hash, "\t") {
+			return "", fmt.Errorf("invalid hash: %v", hash)
+		}
+		return hash, nil
+	}
+	return "", nil
+}
+
+func debug(args ...interface{}) {
+	termbox.Close()
+	fmt.Println(args...)
+	termbox.Init()
+}
+
 func main() {
 	up := flag.Bool("up", false, "dig up from initial commit (don't use with -down)")
 	down := flag.Bool("down", false, "dig down from latest commit (don't use with -up)")
@@ -585,10 +691,22 @@ func main() {
 		digUp = true
 	}
 
+	repo, err := filepath.Abs(*repoDir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "could not get the repo's absolute path: %v\n", err)
+		os.Exit(1)
+	}
+	*repoDir = repo
+
 	commits, err := allCommits(*repoDir, digUp)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "could not get commits: %v\n", err)
 		os.Exit(1)
+	}
+
+	lastc, err := readCommit(*repoDir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "could not get last commit: %v\n", err)
 	}
 
 	err = termbox.Init()
@@ -601,6 +719,14 @@ func main() {
 	w, h := termbox.Size()
 	size := Pt{h, w}
 	screen = NewScreen(size)
+	curIdx := 0
+	for i, c := range commits {
+		if c.Hash == lastc {
+			curIdx = i
+			break
+		}
+	}
+	screen.Side.CurIdx = curIdx
 
 	dig = &Program{
 		NormalMode,
@@ -628,6 +754,10 @@ func main() {
 			if dig.Mode == NormalMode {
 				// exit handling could not be inside of a function.
 				if ev.Key == termbox.KeyCtrlQ || ev.Ch == 'q' {
+					err := saveCommit(dig.RepoDir, screen.Side.Commit().Hash)
+					if err != nil {
+						debug(err)
+					}
 					return
 				}
 			}
