@@ -583,10 +583,10 @@ func findByWord(commits []*Commit, word string, from int) int {
 	return -1
 }
 
-// saveCommit saves currently viewed commit.
-// So can restore with readView,
+// saveLastCommit saves currently viewed commit.
+// So can restore with readLastCommit,
 // when dig opens this repository next time.
-func saveCommit(repoDir, hash string) error {
+func saveLastCommit(repoDir, hash string) error {
 	type view struct {
 		repo string
 		hash string
@@ -596,7 +596,7 @@ func saveCommit(repoDir, hash string) error {
 	if err != nil {
 		return err
 	}
-	conf := filepath.Join(u.HomeDir, ".config", "dig", "commit")
+	conf := filepath.Join(u.HomeDir, ".config", "dig", "last-commit")
 	if err := os.MkdirAll(filepath.Dir(conf), 0755); err != nil && !os.IsExist(err) {
 		return err
 	}
@@ -642,13 +642,13 @@ func saveCommit(repoDir, hash string) error {
 	return nil
 }
 
-// readCommit reads lastly viewed commit in this repository.
-func readCommit(repoDir string) (string, error) {
+// readLastCommit reads lastly viewed commit in this repository.
+func readLastCommit(repoDir string) (string, error) {
 	u, err := user.Current()
 	if err != nil {
 		return "", err
 	}
-	conf := filepath.Join(u.HomeDir, ".config", "dig", "commit")
+	conf := filepath.Join(u.HomeDir, ".config", "dig", "last-commit")
 	if err := os.MkdirAll(filepath.Dir(conf), 0755); err != nil && !os.IsExist(err) {
 		return "", err
 	}
@@ -716,7 +716,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	lastc, err := readCommit(*repoDir)
+	lastc, err := readLastCommit(*repoDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "could not get last commit: %v\n", err)
 	}
@@ -766,7 +766,7 @@ func main() {
 				// exit handling is special,
 				// that it could not be inside of a function.
 				if ev.Key == termbox.KeyCtrlQ || ev.Ch == 'q' {
-					err := saveCommit(dig.RepoDir, screen.Side.Commit().Hash)
+					err := saveLastCommit(dig.RepoDir, screen.Side.Commit().Hash)
 					if err != nil {
 						debugPrintln(err)
 					}
