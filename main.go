@@ -669,7 +669,8 @@ func readCommit(repoDir string) (string, error) {
 	return "", nil
 }
 
-func debug(args ...interface{}) {
+// debugPrintln prints to parent shell.
+func debugPrintln(args ...interface{}) {
 	termbox.Close()
 	fmt.Println(args...)
 	termbox.Init()
@@ -756,7 +757,7 @@ func main() {
 				if ev.Key == termbox.KeyCtrlQ || ev.Ch == 'q' {
 					err := saveCommit(dig.RepoDir, screen.Side.Commit().Hash)
 					if err != nil {
-						debug(err)
+						debugPrintln(err)
 					}
 					return
 				}
