@@ -479,7 +479,19 @@ func commitDiff(hash string) ([][]byte, error) {
 
 // handleNormal handles NormalMode events.
 // When the event was handled, it will return true.
-func handleNormal(ev termbox.Event) bool {
+func handleNormal(ev termbox.Event) {
+	if ok := handleNormalGlobal(ev); ok {
+		return
+	}
+	if ok := screen.Side.Handle(ev); ok {
+		return
+	}
+	screen.Main.Handle(ev)
+}
+
+// handleNormalGlobal handles global NormalMode events.
+// When the event was handled, it will return true.
+func handleNormalGlobal(ev termbox.Event) bool {
 	switch ev.Key {
 	case termbox.KeyEnter:
 		// toggle side
@@ -509,12 +521,12 @@ func handleNormal(ev termbox.Event) bool {
 
 // handleFind handles FindMode events.
 // When the event was handled, it will return true.
-func handleFind(ev termbox.Event) bool {
+func handleFind(ev termbox.Event) {
 	switch ev.Key {
 	case termbox.KeyEsc, termbox.KeyCtrlQ, termbox.KeyCtrlK:
 		dig.FindString = ""
 		dig.Mode = NormalMode
-		return true
+		return
 	case termbox.KeyEnter:
 		from := nextIdx(dig.Commits, screen.Side.CurIdx)
 		if idx := findByHash(dig.Commits, dig.FindString, from); idx != -1 {
@@ -523,14 +535,13 @@ func handleFind(ev termbox.Event) bool {
 		if idx := findByWord(dig.Commits, dig.FindString, from); idx != -1 {
 			screen.Side.CurIdx = idx
 		}
-		return true
+		return
 	case termbox.KeyBackspace, termbox.KeyBackspace2:
 		_, size := utf8.DecodeLastRuneInString(dig.FindString)
 		dig.FindString = dig.FindString[:len(dig.FindString)-size]
-		return true
+		return
 	}
 	dig.FindString += string(ev.Ch)
-	return true
 }
 
 // nextIdx returns next index from commits.
@@ -763,19 +774,9 @@ func main() {
 				}
 			}
 			if dig.Mode == NormalMode {
-				if ok := handleNormal(ev); ok {
-					continue
-				}
-				if ok := screen.Side.Handle(ev); ok {
-					continue
-				}
-				if ok := screen.Main.Handle(ev); ok {
-					continue
-				}
+				handleNormal(ev)
 			} else if dig.Mode == FindMode {
-				if ok := handleFind(ev); ok {
-					continue
-				}
+				handleFind(ev)
 			}
 		case termbox.EventResize:
 			// weird, but terminal(or termbox?) should be cleared
