@@ -762,9 +762,9 @@ func main() {
 		ev := <-events
 		switch ev.Type {
 		case termbox.EventKey:
-			// handle global event
 			if dig.Mode == NormalMode {
-				// exit handling could not be inside of a function.
+				// exit handling is special,
+				// that it could not be inside of a function.
 				if ev.Key == termbox.KeyCtrlQ || ev.Ch == 'q' {
 					err := saveCommit(dig.RepoDir, screen.Side.Commit().Hash)
 					if err != nil {
