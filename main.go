@@ -132,20 +132,23 @@ type CommitArea struct {
 
 // Handle handles a terminal event.
 func (a *CommitArea) Handle(ev termbox.Event) bool {
-	switch ev.Key {
-	case termbox.KeyArrowUp:
+	if ev.Key == termbox.KeyArrowUp || ev.Ch == 'i' {
 		a.CurIdx--
-	case termbox.KeyArrowDown:
+	} else if ev.Key == termbox.KeyArrowDown || ev.Ch == 'k' {
 		a.CurIdx++
-	case termbox.KeyPgup:
+	} else if ev.Key == termbox.KeyPgup || ev.Ch == 'b' {
 		a.CurIdx -= a.Bound.Size.L
-	case termbox.KeyPgdn:
+	} else if ev.Key == termbox.KeyPgdn || ev.Ch == 'f' {
 		a.CurIdx += a.Bound.Size.L
-	case termbox.KeyHome:
+	} else if ev.Ch == 'u' {
+		a.CurIdx -= a.Bound.Size.L / 2
+	} else if ev.Ch == 'd' {
+		a.CurIdx += a.Bound.Size.L / 2
+	} else if ev.Key == termbox.KeyHome {
 		a.CurIdx = 0
-	case termbox.KeyEnd:
+	} else if ev.Key == termbox.KeyEnd {
 		a.CurIdx = len(dig.Commits) - 1
-	default:
+	} else {
 		return false
 	}
 	// validation
@@ -220,27 +223,32 @@ type DiffArea struct {
 
 // Handle handles a terminal event.
 func (a *DiffArea) Handle(ev termbox.Event) bool {
-	switch ev.Ch {
-	case 'f':
+	if ev.Key == termbox.KeyPgdn || ev.Ch == 'f' {
 		a.Win.PageForward()
-	case 'b':
+		return true
+	} else if ev.Key == termbox.KeyPgup || ev.Ch == 'b' {
 		a.Win.PageBackward()
-	case 'd':
+		return true
+	} else if ev.Ch == 'd' {
 		a.Win.HalfPageForward()
-	case 'u':
+		return true
+	} else if ev.Ch == 'u' {
 		a.Win.HalfPageBackward()
-	case 'i':
+		return true
+	} else if ev.Key == termbox.KeyArrowUp || ev.Ch == 'i' {
 		a.Win.MoveUp(1)
-	case 'k':
+		return true
+	} else if ev.Key == termbox.KeyArrowDown || ev.Ch == 'k' {
 		a.Win.MoveDown(1)
-	case 'j':
+		return true
+	} else if ev.Key == termbox.KeyArrowLeft || ev.Ch == 'j' {
 		a.Win.MoveLeft(4)
-	case 'l':
+		return true
+	} else if ev.Key == termbox.KeyArrowRight || ev.Ch == 'l' {
 		a.Win.MoveRight(4)
-	default:
-		return false
+		return true
 	}
-	return true
+	return false
 }
 
 // Draw draws it's contents.
