@@ -224,13 +224,13 @@ type DiffArea struct {
 
 // Handle handles a terminal event.
 func (a *DiffArea) Handle(ev termbox.Event) bool {
-	if ev.Key == termbox.KeyPgdn || ev.Ch == 'f' {
+	if ev.Key == termbox.KeyPgdn || ev.Key == termbox.KeySpace || ev.Ch == 'f' || ev.Ch == ',' {
 		a.Win.PageForward()
 		return true
-	} else if ev.Key == termbox.KeyPgup || ev.Ch == 'b' {
+	} else if ev.Key == termbox.KeyPgup || ev.Ch == 'b' || ev.Ch == 'm' {
 		a.Win.PageBackward()
 		return true
-	} else if ev.Ch == 'd' {
+	} else if ev.Ch == 'd' || ev.Ch == 'o' {
 		a.Win.HalfPageForward()
 		return true
 	} else if ev.Ch == 'u' {
