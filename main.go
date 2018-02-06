@@ -23,11 +23,20 @@ var dig *Program
 // Program is a program.
 type Program struct {
 	Mode    Mode
+	CurView View
 	RepoDir string
 	Commits []*Commit
 
 	FindString string
 }
+
+// View is view of program.
+type View int
+
+const (
+	CommitView = View(iota)
+	DiffView
+)
 
 // Mode is mode of program.
 type Mode int
@@ -42,11 +51,8 @@ var screen *Screen
 
 // Screen is a program screen.
 type Screen struct {
-	size     Pt
-	hideSide bool
-
-	visibleSideWidth   int
-	invisibleSideWidth int
+	size      Pt
+	SideWidth int
 
 	Side   *ItemArea
 	Main   *DiffArea
@@ -57,12 +63,11 @@ type Screen struct {
 // It will also create it's sub areas.
 func NewScreen(size Pt) *Screen {
 	s := &Screen{
-		size:               size,
-		visibleSideWidth:   60,
-		invisibleSideWidth: 30,
-		Side:               &ItemArea{},
-		Main:               &DiffArea{Win: &Window{}},
-		Status:             &StatusArea{},
+		size:      size,
+		SideWidth: 30,
+		Side:      &ItemArea{},
+		Main:      &DiffArea{Win: &Window{}},
+		Status:    &StatusArea{},
 	}
 	s.Resize(size)
 	return s
@@ -70,10 +75,11 @@ func NewScreen(size Pt) *Screen {
 
 // Draw draws the screen.
 func (s *Screen) Draw() {
-	if !s.hideSide {
+	if dig.CurView == CommitView {
 		s.Side.Draw()
+	} else {
+		s.Main.Draw()
 	}
-	s.Main.Draw()
 	s.Status.Draw()
 }
 
@@ -81,31 +87,14 @@ func (s *Screen) Draw() {
 func (s *Screen) Resize(size Pt) {
 	s.size = size
 
-	sideWidth := s.visibleSideWidth
-	if s.hideSide {
-		sideWidth = s.invisibleSideWidth
+	// CommitArea and DiffArea are same,
+	// but ok, because only one of these is drawn.
+	mainArea := Rect{
+		Min:  Pt{0, s.SideWidth},
+		Size: Pt{size.L - 1, size.O - s.SideWidth},
 	}
-	if sideWidth > size.O {
-		sideWidth = size.O
-	}
-
-	mainStart := sideWidth
-	if !s.hideSide {
-		mainStart += 3 // divide areas
-	}
-	mainWidth := size.O - mainStart
-	if mainWidth < 0 {
-		mainWidth = 0
-	}
-
-	s.Side.Bound = Rect{
-		Min:  Pt{0, 0},
-		Size: Pt{size.L - 1, sideWidth},
-	}
-	s.Main.Bound = Rect{
-		Min:  Pt{0, mainStart},
-		Size: Pt{size.L - 1, mainWidth},
-	}
+	s.Side.Bound = mainArea
+	s.Main.Bound = mainArea
 	s.Main.Win.Bound.Size = s.Main.Bound.Size
 	s.Status.Bound = Rect{
 		Min:  Pt{size.L - 1, 0},
@@ -113,29 +102,11 @@ func (s *Screen) Resize(size Pt) {
 	}
 }
 
-// SideShowing returns whether Side area is showing or not.
-func (s *Screen) SideShowing() bool {
-	return !s.hideSide
-}
-
-// ShowSide shows or hides it's Side screen.
-func (s *Screen) ShowSide(show bool) {
-	s.hideSide = !show
-	s.Resize(s.size)
-}
-
 // ExpandSide expands or shirinks it's Side screen.
 func (s *Screen) ExpandSide(n int) {
-	if s.hideSide {
-		s.invisibleSideWidth += n
-		if s.invisibleSideWidth < 0 {
-			s.invisibleSideWidth = 0
-		}
-	} else {
-		s.visibleSideWidth += n
-		if s.visibleSideWidth < 0 {
-			s.visibleSideWidth = 0
-		}
+	s.SideWidth += n
+	if s.SideWidth < 0 {
+		s.SideWidth = 0
 	}
 	s.Resize(s.size)
 }
@@ -227,7 +198,7 @@ func (a *ItemArea) Draw() {
 			}
 			r, size := utf8.DecodeRuneInString(remain)
 			remain = remain[size:]
-			termbox.SetCell(o, l, r, c.Fg, c.Bg)
+			termbox.SetCell(a.Bound.Min.O+o, a.Bound.Min.L+l, r, c.Fg, c.Bg)
 			o += runewidth.RuneWidth(r)
 		}
 	}
@@ -483,10 +454,11 @@ func handleNormal(ev termbox.Event) {
 	if ok := handleNormalGlobal(ev); ok {
 		return
 	}
-	if ok := screen.Side.Handle(ev); ok {
-		return
+	if dig.CurView == CommitView {
+		screen.Side.Handle(ev)
+	} else if dig.CurView == DiffView {
+		screen.Main.Handle(ev)
 	}
-	screen.Main.Handle(ev)
 }
 
 // handleNormalGlobal handles global NormalMode events.
@@ -495,14 +467,14 @@ func handleNormalGlobal(ev termbox.Event) bool {
 	switch ev.Key {
 	case termbox.KeyEnter:
 		// toggle side
-		if screen.SideShowing() {
-			screen.ShowSide(false)
+		if dig.CurView == CommitView {
+			dig.CurView = DiffView
 		} else {
-			screen.ShowSide(true)
+			dig.CurView = CommitView
 		}
 		return true
 	case termbox.KeyEsc:
-		screen.ShowSide(true)
+		dig.CurView = CommitView
 		return true
 	case termbox.KeyCtrlF:
 		dig.Mode = FindMode
@@ -742,6 +714,7 @@ func main() {
 
 	dig = &Program{
 		NormalMode,
+		CommitView,
 		*repoDir,
 		commits,
 		"",
