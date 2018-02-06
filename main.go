@@ -472,33 +472,23 @@ func handleNormal(ev termbox.Event) {
 // handleNormalGlobal handles global NormalMode events.
 // When the event was handled, it will return true.
 func handleNormalGlobal(ev termbox.Event) bool {
-	switch ev.Key {
-	case termbox.KeyEnter, termbox.KeyTab:
+	if ev.Key == termbox.KeyEnter || ev.Key == termbox.KeyTab || ev.Ch == '.' {
 		if dig.CurView == CommitView {
 			dig.CurView = DiffView
 		} else {
 			dig.CurView = CommitView
 		}
 		return true
-	case termbox.KeyEsc:
+	} else if ev.Key == termbox.KeyEsc {
 		dig.CurView = CommitView
 		return true
-	case termbox.KeyCtrlF:
+	} else if ev.Key == termbox.KeyCtrlF {
 		dig.Mode = FindMode
 		return true
-	}
-	switch ev.Ch {
-	case '.':
-		if dig.CurView == CommitView {
-			dig.CurView = DiffView
-		} else {
-			dig.CurView = CommitView
-		}
-		return true
-	case '<':
+	} else if ev.Ch == '<' {
 		screen.ExpandSide(-1)
 		return true
-	case '>':
+	} else if ev.Ch == '>' {
 		screen.ExpandSide(1)
 		return true
 	}
