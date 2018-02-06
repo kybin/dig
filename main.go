@@ -54,8 +54,8 @@ type Screen struct {
 	size      Pt
 	SideWidth int
 
-	Side   *ItemArea
-	Main   *DiffArea
+	Commit *CommitArea
+	Diff   *DiffArea
 	Status *StatusArea
 }
 
@@ -65,8 +65,8 @@ func NewScreen(size Pt) *Screen {
 	s := &Screen{
 		size:      size,
 		SideWidth: 30,
-		Side:      &ItemArea{},
-		Main:      &DiffArea{Win: &Window{}},
+		Commit:    &CommitArea{},
+		Diff:      &DiffArea{Win: &Window{}},
 		Status:    &StatusArea{},
 	}
 	s.Resize(size)
@@ -76,9 +76,9 @@ func NewScreen(size Pt) *Screen {
 // Draw draws the screen.
 func (s *Screen) Draw() {
 	if dig.CurView == CommitView {
-		s.Side.Draw()
+		s.Commit.Draw()
 	} else {
-		s.Main.Draw()
+		s.Diff.Draw()
 	}
 	s.Status.Draw()
 }
@@ -93,9 +93,9 @@ func (s *Screen) Resize(size Pt) {
 		Min:  Pt{0, s.SideWidth},
 		Size: Pt{size.L - 1, size.O - s.SideWidth},
 	}
-	s.Side.Bound = mainArea
-	s.Main.Bound = mainArea
-	s.Main.Win.Bound.Size = s.Main.Bound.Size
+	s.Commit.Bound = mainArea
+	s.Diff.Bound = mainArea
+	s.Diff.Win.Bound.Size = s.Diff.Bound.Size
 	s.Status.Bound = Rect{
 		Min:  Pt{size.L - 1, 0},
 		Size: Pt{1, size.O},
@@ -122,8 +122,8 @@ func fillColor(bound Rect, c Color) {
 	}
 }
 
-// ItemArea is an Area for showing commits.
-type ItemArea struct {
+// CommitArea is an Area for showing commits.
+type CommitArea struct {
 	Bound   Rect
 	Commits []*Commit
 	CurIdx  int
@@ -131,7 +131,7 @@ type ItemArea struct {
 }
 
 // Handle handles a terminal event.
-func (a *ItemArea) Handle(ev termbox.Event) bool {
+func (a *CommitArea) Handle(ev termbox.Event) bool {
 	switch ev.Key {
 	case termbox.KeyArrowUp:
 		a.CurIdx--
@@ -159,7 +159,7 @@ func (a *ItemArea) Handle(ev termbox.Event) bool {
 }
 
 // Draw draws it's contents.
-func (a *ItemArea) Draw() {
+func (a *CommitArea) Draw() {
 	if a.TopIdx > a.CurIdx {
 		a.TopIdx = a.CurIdx
 	} else if a.TopIdx+a.Bound.Size.L <= a.CurIdx {
@@ -205,7 +205,7 @@ func (a *ItemArea) Draw() {
 }
 
 // Commit is currently selected commit.
-func (a *ItemArea) Commit() *Commit {
+func (a *CommitArea) Commit() *Commit {
 	return dig.Commits[a.CurIdx]
 }
 
@@ -245,7 +245,7 @@ func (a *DiffArea) Handle(ev termbox.Event) bool {
 
 // Draw draws it's contents.
 func (a *DiffArea) Draw() {
-	hash := screen.Side.Commit().Hash
+	hash := screen.Commit.Commit().Hash
 	if hash != a.CommitHash {
 		a.CommitHash = hash
 		a.Text, _ = commitDiff(hash) // ignore error for now
@@ -455,9 +455,9 @@ func handleNormal(ev termbox.Event) {
 		return
 	}
 	if dig.CurView == CommitView {
-		screen.Side.Handle(ev)
+		screen.Commit.Handle(ev)
 	} else if dig.CurView == DiffView {
-		screen.Main.Handle(ev)
+		screen.Diff.Handle(ev)
 	}
 }
 
@@ -500,12 +500,12 @@ func handleFind(ev termbox.Event) {
 		dig.Mode = NormalMode
 		return
 	case termbox.KeyEnter:
-		from := nextIdx(dig.Commits, screen.Side.CurIdx)
+		from := nextIdx(dig.Commits, screen.Commit.CurIdx)
 		if idx := findByHash(dig.Commits, dig.FindString, from); idx != -1 {
-			screen.Side.CurIdx = idx
+			screen.Commit.CurIdx = idx
 		}
 		if idx := findByWord(dig.Commits, dig.FindString, from); idx != -1 {
-			screen.Side.CurIdx = idx
+			screen.Commit.CurIdx = idx
 		}
 		return
 	case termbox.KeyBackspace, termbox.KeyBackspace2:
@@ -710,7 +710,7 @@ func main() {
 			break
 		}
 	}
-	screen.Side.CurIdx = curIdx
+	screen.Commit.CurIdx = curIdx
 
 	dig = &Program{
 		NormalMode,
@@ -739,7 +739,7 @@ func main() {
 				// exit handling is special,
 				// that it could not be inside of a function.
 				if ev.Key == termbox.KeyCtrlQ || ev.Ch == 'q' {
-					err := saveLastCommit(dig.RepoDir, screen.Side.Commit().Hash)
+					err := saveLastCommit(dig.RepoDir, screen.Commit.Commit().Hash)
 					if err != nil {
 						debugPrintln(err)
 					}
