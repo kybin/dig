@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -61,10 +62,10 @@ type Screen struct {
 
 // NewScreen creates a new Screen.
 // It will also create it's sub areas.
-func NewScreen(size Pt) *Screen {
+func NewScreen(size Pt, sideWidth int) *Screen {
 	s := &Screen{
 		size:      size,
-		SideWidth: 20,
+		SideWidth: sideWidth,
 		Commit:    &CommitArea{},
 		Diff:      &DiffArea{Win: &Window{}},
 		Status:    &StatusArea{},
@@ -656,6 +657,40 @@ func readLastCommit(repoDir string) (string, error) {
 	return "", nil
 }
 
+// saveSideWidth saves current side width to config file.
+func saveSideWidth(side int) error {
+	u, err := user.Current()
+	if err != nil {
+		return err
+	}
+	conf := filepath.Join(u.HomeDir, ".config", "dig", "sidewidth")
+	if err := os.MkdirAll(filepath.Dir(conf), 0755); err != nil && !os.IsExist(err) {
+		return err
+	}
+	return ioutil.WriteFile(conf, []byte(fmt.Sprintf("%d", side)), 0644)
+}
+
+// readSideWidth reads latest side width from config file.
+func readSideWidth() (int, error) {
+	u, err := user.Current()
+	if err != nil {
+		return 20, err
+	}
+	conf := filepath.Join(u.HomeDir, ".config", "dig", "sidewidth")
+	b, err := ioutil.ReadFile(conf)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return 20, nil
+		}
+		return 20, err
+	}
+	i, err := strconv.Atoi(string(b))
+	if err != nil {
+		return 20, err
+	}
+	return i, nil
+}
+
 // debugPrintln prints to parent shell.
 func debugPrintln(args ...interface{}) {
 	termbox.Close()
@@ -692,9 +727,15 @@ func main() {
 		os.Exit(1)
 	}
 
+	// read configs, it will continue running program
+	// even if these are failed.
 	lastc, err := readLastCommit(*repoDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "could not get last commit: %v\n", err)
+	}
+	sideWidth, err := readSideWidth()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "could not get side width: %v\n", err)
 	}
 
 	err = termbox.Init()
@@ -706,7 +747,7 @@ func main() {
 
 	w, h := termbox.Size()
 	size := Pt{h, w}
-	screen = NewScreen(size)
+	screen = NewScreen(size, sideWidth)
 	curIdx := 0
 	for i, c := range commits {
 		if c.Hash == lastc {
@@ -744,6 +785,10 @@ func main() {
 				// that it could not be inside of a function.
 				if ev.Key == termbox.KeyCtrlQ || ev.Ch == 'q' {
 					err := saveLastCommit(dig.RepoDir, screen.Commit.Commit().Hash)
+					if err != nil {
+						debugPrintln(err)
+					}
+					err = saveSideWidth(screen.SideWidth)
 					if err != nil {
 						debugPrintln(err)
 					}
