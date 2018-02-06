@@ -64,7 +64,7 @@ type Screen struct {
 func NewScreen(size Pt) *Screen {
 	s := &Screen{
 		size:      size,
-		SideWidth: 30,
+		SideWidth: 20,
 		Commit:    &CommitArea{},
 		Diff:      &DiffArea{Win: &Window{}},
 		Status:    &StatusArea{},
