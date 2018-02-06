@@ -473,8 +473,7 @@ func handleNormal(ev termbox.Event) {
 // When the event was handled, it will return true.
 func handleNormalGlobal(ev termbox.Event) bool {
 	switch ev.Key {
-	case termbox.KeyEnter:
-		// toggle side
+	case termbox.KeyEnter, termbox.KeyTab:
 		if dig.CurView == CommitView {
 			dig.CurView = DiffView
 		} else {
@@ -489,6 +488,13 @@ func handleNormalGlobal(ev termbox.Event) bool {
 		return true
 	}
 	switch ev.Ch {
+	case '.':
+		if dig.CurView == CommitView {
+			dig.CurView = DiffView
+		} else {
+			dig.CurView = CommitView
+		}
+		return true
 	case '<':
 		screen.ExpandSide(-1)
 		return true
