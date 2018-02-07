@@ -453,6 +453,7 @@ func commitDiff(hash string) ([][]byte, error) {
 	}
 	// tab handling in screen is quite awkard. handle it here.
 	out = bytes.Replace(out, []byte("\t"), []byte("    "), -1)
+	out = bytes.TrimRight(out, " \n")
 	lines := bytes.Split(out, []byte("\n"))
 	return lines, err
 }
