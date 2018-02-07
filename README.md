@@ -1,8 +1,6 @@
 # dig
 
-dig is a git diff viewer in terminal.
-
-It displays commits and it's diff in one screen.
+dig is a git diff history viewer in terminal.
 
 By default it displays commits first-to-latest order.
 Because it's the main reason that I created dig.
