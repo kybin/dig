@@ -368,7 +368,7 @@ type StatusArea struct {
 func (a StatusArea) Draw() {
 	var drawString string
 	if dig.Mode == NormalMode {
-		drawString = "q: quit, Down: next commit, Up: prev commit, f: page down, b: page up, <: shirink side, >: expand side"
+		drawString = "q: quit, k: down, i: up, f: page down, b: page up, <: shirink side, >: expand side"
 	} else if dig.Mode == FindMode {
 		drawString = "find: " + dig.FindString
 	}
