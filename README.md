@@ -9,6 +9,10 @@ I wanted to explore git repositories from the beginning.
 
 ## install
 
+Download a pre-built binary if it exists.
+
+Or you could build yourself with Go.
+
 `go get -u github.com/kybin/dig`
 
 
