@@ -67,7 +67,7 @@ func NewScreen(size Pt, sideWidth int) *Screen {
 		size:      size,
 		SideWidth: sideWidth,
 		Commit:    &CommitArea{},
-		Diff:      &DiffArea{Win: &Window{}},
+		Diff:      &DiffArea{Win: &Window{}, WindowPoses: make(map[string]Pt)},
 		Status:    &StatusArea{},
 	}
 	s.Resize(size)
@@ -220,6 +220,8 @@ type DiffArea struct {
 
 	Bound Rect
 	Win   *Window
+
+	WindowPoses map[string]Pt
 }
 
 // Handle handles a terminal event.
@@ -256,9 +258,13 @@ func (a *DiffArea) Handle(ev termbox.Event) bool {
 func (a *DiffArea) Draw() {
 	hash := screen.Commit.Commit().Hash
 	if hash != a.CommitHash {
+		a.WindowPoses[a.CommitHash] = a.Win.Bound.Min
+
 		a.CommitHash = hash
 		a.Text, _ = commitDiff(hash) // ignore error for now
 		a.Win.Reset(a.Text)
+		// get zero value is fine when the lookup is failed.
+		a.Win.Bound.Min = a.WindowPoses[hash]
 	}
 	minL := a.Win.Bound.Min.L
 	maxL := a.Win.Bound.Min.L + a.Win.Bound.Size.L
