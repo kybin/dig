@@ -282,8 +282,10 @@ func (a *DiffArea) Handle(ev termbox.Event) bool {
 	}
 	if ev.Key == termbox.KeyCtrlP {
 		screen.Commit.CursorUp(1)
+		return true
 	} else if ev.Key == termbox.KeyCtrlN {
 		screen.Commit.CursorDown(1)
+		return true
 	}
 	return false
 }
