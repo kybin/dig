@@ -134,32 +134,61 @@ type CommitArea struct {
 // Handle handles a terminal event.
 func (a *CommitArea) Handle(ev termbox.Event) bool {
 	if ev.Key == termbox.KeyArrowUp || ev.Ch == 'i' {
-		a.CurIdx--
+		a.CursorUp(1)
+		return true
 	} else if ev.Key == termbox.KeyArrowDown || ev.Ch == 'k' {
-		a.CurIdx++
+		a.CursorDown(1)
+		return true
 	} else if ev.Key == termbox.KeyPgup || ev.Ch == 'b' {
-		a.CurIdx -= a.Bound.Size.L
+		a.CursorUp(a.Bound.Size.L)
+		return true
 	} else if ev.Key == termbox.KeyPgdn || ev.Ch == 'f' {
-		a.CurIdx += a.Bound.Size.L
+		a.CursorDown(a.Bound.Size.L)
+		return true
 	} else if ev.Ch == 'u' {
-		a.CurIdx -= a.Bound.Size.L / 2
+		a.CursorUp(a.Bound.Size.L / 2)
+		return true
 	} else if ev.Ch == 'd' {
-		a.CurIdx += a.Bound.Size.L / 2
+		a.CursorDown(a.Bound.Size.L / 2)
+		return true
 	} else if ev.Key == termbox.KeyHome {
-		a.CurIdx = 0
+		a.SetCursor(0)
+		return true
 	} else if ev.Key == termbox.KeyEnd {
-		a.CurIdx = len(dig.Commits) - 1
-	} else {
-		return false
+		a.SetCursor(len(dig.Commits) - 1)
+		return true
 	}
-	// validation
+	return false
+}
+
+// SetCursor set it's cursor index.
+// It will be cutted to make the cursor be inside of valid range.
+func (a *CommitArea) SetCursor(n int) {
+	a.CurIdx = n
+	a.cursorValidation()
+}
+
+// CursorUp moves it's cursor upside n step.
+// When it reaches at the beginning, it will stop.
+func (a *CommitArea) CursorUp(n int) {
+	a.CurIdx -= n
+	a.cursorValidation()
+}
+
+// CursorDown moves it's cursor downside n step.
+// When it reaches at the end, it will stop.
+func (a *CommitArea) CursorDown(n int) {
+	a.CurIdx += n
+	a.cursorValidation()
+}
+
+func (a *CommitArea) cursorValidation() {
 	if a.CurIdx < 0 {
 		a.CurIdx = 0
 	}
 	if a.CurIdx >= len(dig.Commits) {
 		a.CurIdx = len(dig.Commits) - 1
 	}
-	return true
 }
 
 // Draw draws it's contents.
