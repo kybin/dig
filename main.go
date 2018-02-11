@@ -461,8 +461,10 @@ type Commit struct {
 }
 
 // allCommits find a repository and get it's commits.
-func allCommits(repodir string, digUp bool) ([]*Commit, error) {
-	cmd := exec.Command("git", "log", "--pretty=format:%H%n%s%n")
+func allCommits(repodir string, targets []string, digUp bool) ([]*Commit, error) {
+	args := []string{"log", "--pretty=format:%H%n%s%n"}
+	args = append(args, targets...)
+	cmd := exec.Command("git", args...)
 	cmd.Dir = repodir
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -764,7 +766,9 @@ func main() {
 	}
 	*repoDir = repo
 
-	commits, err := allCommits(*repoDir, digUp)
+	targets := flag.Args()
+
+	commits, err := allCommits(*repoDir, targets, digUp)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "could not get commits: %v\n", err)
 		os.Exit(1)
