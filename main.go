@@ -518,7 +518,7 @@ func handleNormal(ev termbox.Event) {
 // handleNormalGlobal handles global NormalMode events.
 // When the event was handled, it will return true.
 func handleNormalGlobal(ev termbox.Event) bool {
-	if ev.Key == termbox.KeyEnter || ev.Key == termbox.KeyTab || ev.Ch == '.' {
+	if ev.Key == termbox.KeyEnter || ev.Key == termbox.KeyTab || ev.Ch == '.' || ev.Ch == 'q' {
 		if dig.CurView == CommitView {
 			dig.CurView = DiffView
 		} else {
@@ -830,7 +830,7 @@ func main() {
 			if dig.Mode == NormalMode {
 				// exit handling is special,
 				// that it could not be inside of a function.
-				if ev.Key == termbox.KeyCtrlQ || ev.Ch == 'q' {
+				if ev.Key == termbox.KeyCtrlQ || dig.CurView == CommitView && ev.Ch == 'q' {
 					err := saveLastCommit(dig.RepoDir, screen.Commit.Commit().Hash)
 					if err != nil {
 						debugPrintln(err)
