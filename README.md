@@ -1,6 +1,6 @@
-# dig
+# git-dig
 
-dig is a git diff history viewer in terminal.
+git-dig is a git diff history viewer in terminal.
 
 By default it displays commits first-to-latest order.
 Because it's the main reason that I created dig.
@@ -13,10 +13,10 @@ Download a pre-built binary if it exists.
 
 Or you could build yourself with Go.
 
-`go get -u github.com/kybin/dig`
+`go get -u github.com/kybin/git-dig`
 
 
 ## run
 
-`dig # from git repository`
+`git dig # from git repository`
 
